@@ -1,0 +1,49 @@
+@file:Suppress("VulnerableLibrariesLocal", "SpellCheckingInspection")
+
+repositories {
+  mavenCentral()
+  maven("https://jitpack.io")
+}
+plugins {
+  `java-library`
+  `maven-publish`
+  kotlin("jvm") version "2.1.20-Beta2"
+  kotlin("plugin.serialization") version "2.1.20-Beta2"
+}
+dependencies {
+  api("io.github.kotlin-telegram-bot.kotlin-telegram-bot:telegram:6.3.0")
+  api("org.jetbrains.kotlinx:kotlinx-serialization-cbor:1.8.0")
+  api("com.google.guava:guava:33.4.0-jre")
+  implementation("com.squareup.retrofit2:retrofit:2.11.0")
+  testImplementation("com.squareup.okhttp3:mockwebserver:4.12.0")
+  testImplementation("org.junit.jupiter:junit-jupiter:5.11.4")
+  testImplementation("com.google.truth:truth:1.4.4")
+  testRuntimeOnly("org.junit.platform:junit-platform-launcher:1.11.4")
+}
+kotlin {
+  compilerOptions {
+    compilerOptions.optIn.add("kotlinx.serialization.ExperimentalSerializationApi")
+  }
+}
+tasks.test {
+  useJUnitPlatform()
+}
+publishing {
+  publications {
+    create<MavenPublication>("telegram-storage") {
+      from(components["java"])
+    }
+  }
+}
+
+
+// Uses a loopback HTTP fixture, dummy credentials, and the real storage read path.
+tasks.register<JavaExec>("benchmarkReads") {
+  dependsOn(tasks.testClasses)
+  classpath = sourceSets.test.get().runtimeClasspath
+  mainClass.set("com.github.demidko.telegram.ReadBenchmark")
+  args(
+    providers.gradleProperty("payloadBytes").getOrElse("1024"),
+    providers.gradleProperty("cacheDownloadPaths").getOrElse("true"),
+  )
+}
